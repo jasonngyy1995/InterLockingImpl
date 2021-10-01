@@ -30,6 +30,16 @@ class FiringPolicy
     {
         return this.section_id_2;
     }
+
+    boolean getEnabled()
+    {
+        return this.enabled;
+    }
+
+    void setEnabled(boolean permission)
+    {
+        this.enabled = permission;
+    }
 }
 
 class PointMachine
@@ -46,13 +56,24 @@ class PointMachine
     {
         this.controlled_policies.add(policy);
     }
+
+    ArrayList<FiringPolicy> getControlled_policies()
+    {
+        return this.controlled_policies;
+    }
+
+    void default_enabled_policy(int index, boolean permission)
+    {
+        this.controlled_policies.get(index).setEnabled(permission);
+    }
 }
 
-public class NetInit
+public class PetriNet
 {
     // Store the railway system
     ArrayList<Section> sectionsList = new ArrayList<Section>();
     ArrayList<FiringPolicy> policiesList = new ArrayList<FiringPolicy>();
+    ArrayList<PointMachine> pointMachineList = new ArrayList<PointMachine>();
 
     void init_railway()
     {
@@ -179,6 +200,11 @@ public class NetInit
                 pointMachine.add_policy(policiesList.get(i));
             }
         }
+
+        pointMachine.default_enabled_policy(0,true);
+        pointMachine.default_enabled_policy(1,false);
+
+        pointMachineList.add(pointMachine);
     }
 
     void init_pointMachines()
@@ -188,6 +214,28 @@ public class NetInit
         create_pointMachine(3,1,5,3,4);
         create_pointMachine(4,9,6,10,6);
         create_pointMachine(5,9,6,5,9);
-        create_pointMachine(5,9,6,5,8);
+        create_pointMachine(6,9,6,5,8);
+    }
+
+    ArrayList<PointMachine> getPointMachineList()
+    {
+        return pointMachineList;
+    }
+
+    void pointMachine_changeEnabled(int machine_id)
+    {
+        PointMachine target_machine = pointMachineList.get(machine_id - 1);
+        ArrayList<FiringPolicy> tmp_policyList = target_machine.getControlled_policies();
+
+        for (int i = 0; i < tmp_policyList.size(); i++)
+        {
+            if (tmp_policyList.get(i).getEnabled() == true)
+            {
+                tmp_policyList.get(i).setEnabled(false);
+            } else
+            {
+                tmp_policyList.get(i).setEnabled(true);
+            }
+        }
     }
 }

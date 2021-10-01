@@ -79,14 +79,14 @@ class Train
         this.dest_SectionId = destId;
     }
 
-    void setOccupying_SectionId(int id)
-    {
-        this.occupying_SectionId = id;
-    }
-
     String getTrainName()
     {
         return this.trainName;
+    }
+
+    void setOccupying_SectionId(int id)
+    {
+        this.occupying_SectionId = id;
     }
 
     int getOccupying_SectionId()
@@ -112,14 +112,17 @@ abstract class InterlockingImpl implements Interlocking
     ArrayList<Train> exited_train_list = new ArrayList<Train>();
     ArrayList<Section> sections_list = new ArrayList<Section>();
     ArrayList<PointMachine> pointMachines_list = new ArrayList<PointMachine>();
+    PetriNet petriNet = new PetriNet();
 
     // function to call at first to initialize the petri net of the railway system
     public void initialize_PetriNet()
     {
-        NetInit netInit = new NetInit();
-        netInit.init_railway();
-        sections_list = netInit.getSectionsList();
+        petriNet.init_railway();
+        sections_list = petriNet.getSectionsList();
 
+        petriNet.init_firingPolicies();
+        petriNet.init_pointMachines();
+        pointMachines_list = petriNet.getPointMachineList();
 
     }
 
@@ -193,6 +196,7 @@ abstract class InterlockingImpl implements Interlocking
         present_train_list.add(newTrain);
     }
 
+
     public int moveSingleTrain(String trainName)
     {
 
@@ -222,10 +226,13 @@ abstract class InterlockingImpl implements Interlocking
             {
                 throw new IllegalArgumentException();
             }
-
-            int successfulPass = moveSingleTrain(train);
-            movedTrains += successfulPass;
         }
+
+        // Firstly, all trains at destination are exited
+
+        // update firing policies
+
+        // move a single train
 
         return movedTrains;
     }
@@ -256,80 +263,3 @@ abstract class InterlockingImpl implements Interlocking
     }
 
 }
-
-
-// ************************************ Path Checking ******************************************
-
-//    // prevent possible conflict of trains in section 3 and 4
-//    String returnOccupyingTrain = sections_list.get(destinationTrackSection - 1).getOccupyingTrain_name();
-//
-//    if (entryTrackSection == 3 && destinationTrackSection == 4 && !returnOccupyingTrain.equals(null))
-//    {
-//        int trainPos = getTrainPos(returnOccupyingTrain);
-//        if (present_train_list.get(trainPos).getDestination_id() == 3)
-//        {
-//            System.out.println("Train to section 3 was added in section 4 already, moving from section 3 to section 4 is not allowed.");
-//            throw new IllegalArgumentException();
-//        }
-//    }
-//
-//    if (entryTrackSection == 4 && destinationTrackSection == 3 && !returnOccupyingTrain.equals(null))
-//    {
-//        int trainPos = getTrainPos(returnOccupyingTrain);
-//
-//        if (present_train_list.get(trainPos).getDestination_id() == 4)
-//        {
-//            System.out.println("Train to section 4 was added in section 3 already, entry to section 4 blocked.");
-//            throw new IllegalArgumentException();
-//        }
-//    }
-
-// if train enters from section 3 to section 11, can't enter if section 7 or 11 is occupied with a train to opposite direction
-//        if (entryTrackSection == 3 && destinationTrackSection != 4)
-//                {
-//                int trainPos;
-//                if (!sections_list.get(6).getOccupyingTrain_name().equals(null))
-//                {
-//                trainPos = getTrainPos(sections_list.get(6).getOccupyingTrain_name());
-//                if (present_train_list.get(trainPos).getTrain_direction() == Direction.North)
-//                {
-//                System.out.println("Train is already coming, entry to section 3 blocked.");
-//                throw new IllegalArgumentException();
-//                }
-//                }
-//
-//                if (!sections_list.get(10).getOccupyingTrain_name().equals(null))
-//                {
-//                trainPos = getTrainPos(sections_list.get(10).getOccupyingTrain_name());
-//                if (present_train_list.get(trainPos).getTrain_direction() == Direction.North)
-//                {
-//                System.out.println("Train is already coming, entry to section 3 blocked.");
-//                throw new IllegalArgumentException();
-//                }
-//                }
-//                }
-//
-//                // if entry section is 11, can't enter if section 7 is occupied with a train to opposite direction, or another train enters from section 3 to section 11
-//                if (entryTrackSection == 11)
-//                {
-//                int trainPos;
-//                if (!sections_list.get(6).getOccupyingTrain_name().equals(null))
-//                {
-//                trainPos = getTrainPos(sections_list.get(6).getOccupyingTrain_name());
-//                if (present_train_list.get(trainPos).getTrain_direction() == Direction.South)
-//                {
-//                System.out.println("Train is already coming, entry to section 11 blocked.");
-//                throw new IllegalArgumentException();
-//                }
-//                }
-//
-//                if (!sections_list.get(2).getOccupyingTrain_name().equals(null))
-//                {
-//                trainPos = getTrainPos(sections_list.get(10).getOccupyingTrain_name());
-//                if (present_train_list.get(trainPos).getTrain_direction() == Direction.South)
-//                {
-//                System.out.println("Train is already coming, entry to section 11 blocked.");
-//                throw new IllegalArgumentException();
-//                }
-//                }
-//                }

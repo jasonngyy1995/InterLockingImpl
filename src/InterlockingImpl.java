@@ -13,12 +13,18 @@ class Section
 {
     int sectionId;
     String occupyingTrain_name;
-    ArrayList<Transition> transitionsList;
-    ArrayList<Section> possibleDestination;
+    ArrayList<Transition> transitionsList = new ArrayList<Transition>();
+    ArrayList<Section> possibleDestination = new ArrayList<Section>();;
 
-    Section(int sectionId)
+    Section(int sectionId, String occ_train)
     {
         this.sectionId = sectionId;
+        this.occupyingTrain_name = occ_train;
+    }
+
+    int getSectionId()
+    {
+        return this.sectionId;
     }
 
     void setOccupyingTrain_name(String train_name)
@@ -36,6 +42,11 @@ class Section
         this.transitionsList.add(tran);
     }
 
+    ArrayList<Transition> getTransitionsList()
+    {
+        return this.transitionsList;
+    }
+
     void addDestination(Section dest)
     {
         this.possibleDestination.add(dest);
@@ -46,12 +57,12 @@ class Section
 class Transition
 {
     Direction train_direction;
-    Section next_section;
+    int next_section_id;
 
-    Transition(Direction dir, Section next_section)
+    Transition(Direction dir, int next_section_id)
     {
         this.train_direction = dir;
-        this.next_section = next_section;
+        this.next_section_id = next_section_id;
     }
 
     Direction getTransition_dir()
@@ -59,9 +70,9 @@ class Transition
         return this.train_direction;
     }
 
-    Section getNext_section()
+    int getNext_section_id()
     {
-        return this.next_section;
+        return this.next_section_id;
     }
 }
 
@@ -105,13 +116,12 @@ class Train
     }
 }
 
-abstract class InterlockingImpl implements Interlocking
+public class InterlockingImpl implements Interlocking
 {
     // Store all the trains in present
     ArrayList<Train> present_train_list = new ArrayList<Train>();
     ArrayList<Train> exited_train_list = new ArrayList<Train>();
     ArrayList<Section> sections_list = new ArrayList<Section>();
-    ArrayList<PointMachine> pointMachines_list = new ArrayList<PointMachine>();
     PetriNet petriNet = new PetriNet();
 
     // function to call at first to initialize the petri net of the railway system
@@ -122,7 +132,6 @@ abstract class InterlockingImpl implements Interlocking
 
         petriNet.init_firingPolicies();
         petriNet.init_pointMachines();
-        pointMachines_list = petriNet.getPointMachineList();
 
     }
 
@@ -138,6 +147,7 @@ abstract class InterlockingImpl implements Interlocking
                 break;
             }
         }
+
         return exist;
     }
 
@@ -196,10 +206,85 @@ abstract class InterlockingImpl implements Interlocking
         present_train_list.add(newTrain);
     }
 
+    // get the next section to move to
+    int nextSection_toMove(String trainName)
+    {
+        int id_toReturn = -1;
+        int trainPos = getTrainPos(trainName);
+        Train moving_train = present_train_list.get(trainPos);
+
+        int current_sec = moving_train.getOccupying_SectionId();
+        ArrayList<Transition> sec_tran = sections_list.get(current_sec).getTransitionsList();
+
+        for (int i = 0; i < sec_tran.size(); i++)
+        {
+            if (sec_tran.get(i).getNext_section_id() == moving_train.getDest_SectionId())
+            {
+                Transition next_tran = sec_tran.get(i);
+                id_toReturn = next_tran.getNext_section_id();
+                break;
+
+            } else if (sec_tran.get(i).getTransition_dir() == moving_train.getTrain_direction())
+            {
+                Transition next_tran = sec_tran.get(i);
+                id_toReturn = next_tran.getNext_section_id();
+            }
+        }
+
+        return id_toReturn;
+    }
+
+    boolean checkIfSectionEmpty(int sectionId)
+    {
+        Section sec = sections_list.get(sectionId - 1);
+        if (sec.getOccupyingTrain_name().equals(""))
+        {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     public int moveSingleTrain(String trainName)
     {
+        int next_section_id = nextSection_toMove(trainName);
+        if (next_section_id == -1)
+        {
+            System.out.println("Error in getting next section, program stops.");
+            throw new IllegalStateException();
+        }
 
+        int trainPos = getTrainPos(trainName);
+        Train moving_train = present_train_list.get(trainPos);
+        int current_sec = moving_train.getOccupying_SectionId();
+
+        boolean canPass = true;
+        String policy_to_check = "S"+current_sec+"S"+next_section_id;
+        ArrayList<FiringPolicy> policiesList = petriNet.getPoliciesList();
+
+        for (int i = 0; i < policiesList.size(); i++)
+        {
+            FiringPolicy policy = policiesList.get(i);
+            if (policy.getPolicy_name().equals(policy_to_check) && policy.getEnabled() == false)
+            {
+                canPass = false;
+                break;
+            }
+        }
+
+        if (canPass == true)
+        {
+            boolean isEmpty = checkIfSectionEmpty(next_section_id);
+            if (isEmpty == true)
+            {
+                sections_list.get(next_section_id - 1).setOccupyingTrain_name(trainName);
+                return 1;
+            } else {
+                return 0;
+            }
+        } else {
+            return 0;
+        }
 
     }
 
@@ -229,10 +314,28 @@ abstract class InterlockingImpl implements Interlocking
         }
 
         // Firstly, all trains at destination are exited
+        for (String train : trainNames)
+        {
+            int trainPos = getTrainPos(train);
+            int currentSectionId = present_train_list.get(trainPos).getOccupying_SectionId();
+            if (currentSectionId == present_train_list.get(trainPos).getDest_SectionId())
+            {
+                sections_list.get(currentSectionId - 1).setOccupyingTrain_name("");
+                exited_train_list.add(present_train_list.get(trainPos));
+                present_train_list.remove(trainPos);
+            }
+        }
 
         // update firing policies
+        petriNet.update_PointMachine(sections_list);
 
         // move a single train
+        for (String train : trainNames)
+        {
+            movedTrains += moveSingleTrain(train);
+        }
+
+        petriNet.reset_to_default();
 
         return movedTrains;
     }

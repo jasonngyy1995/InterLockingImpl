@@ -202,6 +202,8 @@ public class InterlockingImpl implements Interlocking
         Section enterSection = sections_list.get(entryTrackSection - 1);
         Direction newTrain_dir = enterSection.transitionsList.get(0).train_direction;
         Train newTrain = new Train(trainName, newTrain_dir, destinationTrackSection);
+        enterSection.setOccupyingTrain_name(trainName);
+        newTrain.setOccupying_SectionId(entryTrackSection);
 
         present_train_list.add(newTrain);
     }
@@ -214,7 +216,7 @@ public class InterlockingImpl implements Interlocking
         Train moving_train = present_train_list.get(trainPos);
 
         int current_sec = moving_train.getOccupying_SectionId();
-        ArrayList<Transition> sec_tran = sections_list.get(current_sec).getTransitionsList();
+        ArrayList<Transition> sec_tran = sections_list.get(current_sec - 1).getTransitionsList();
 
         for (int i = 0; i < sec_tran.size(); i++)
         {
@@ -259,7 +261,15 @@ public class InterlockingImpl implements Interlocking
         int current_sec = moving_train.getOccupying_SectionId();
 
         boolean canPass = true;
-        String policy_to_check = "S"+current_sec+"S"+next_section_id;
+        String policy_to_check;
+
+        if (current_sec == 7 && next_section_id == 3 || current_sec == 4 && next_section_id == 3)
+        {
+            policy_to_check = "S"+next_section_id+"S"+current_sec;
+        } else {
+            policy_to_check = "S"+current_sec+"S"+next_section_id;
+        }
+
         ArrayList<FiringPolicy> policiesList = petriNet.getPoliciesList();
 
         for (int i = 0; i < policiesList.size(); i++)
@@ -278,6 +288,8 @@ public class InterlockingImpl implements Interlocking
             if (isEmpty == true)
             {
                 sections_list.get(next_section_id - 1).setOccupyingTrain_name(trainName);
+                sections_list.get(current_sec - 1).setOccupyingTrain_name("");
+                moving_train.setOccupying_SectionId(next_section_id);
                 return 1;
             } else {
                 return 0;
@@ -314,15 +326,14 @@ public class InterlockingImpl implements Interlocking
         }
 
         // Firstly, all trains at destination are exited
-        for (String train : trainNames)
+        for (int i = 0; i < present_train_list.size(); i++)
         {
-            int trainPos = getTrainPos(train);
-            int currentSectionId = present_train_list.get(trainPos).getOccupying_SectionId();
-            if (currentSectionId == present_train_list.get(trainPos).getDest_SectionId())
+            int currentSectionId = present_train_list.get(i).getOccupying_SectionId();
+            if (currentSectionId == present_train_list.get(i).getDest_SectionId())
             {
                 sections_list.get(currentSectionId - 1).setOccupyingTrain_name("");
-                exited_train_list.add(present_train_list.get(trainPos));
-                present_train_list.remove(trainPos);
+                exited_train_list.add(present_train_list.get(i));
+                present_train_list.remove(i);
             }
         }
 

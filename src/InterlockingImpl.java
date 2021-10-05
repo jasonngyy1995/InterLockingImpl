@@ -194,7 +194,7 @@ public class InterlockingImpl implements Interlocking
         }
 
         // if the entry section is occupied
-        if (!sections_list.get(entryTrackSection - 1).occupyingTrain_name.isEmpty())
+        if (!sections_list.get(entryTrackSection - 1).occupyingTrain_name.equals(""))
         {
             throw new IllegalStateException();
         }
@@ -282,12 +282,16 @@ public class InterlockingImpl implements Interlocking
             }
         }
 
+        System.out.println(trainName);
+        System.out.println(petriNet.getPoliciesList().get(7).getEnabled());
+
         if (canPass == true)
         {
             boolean isEmpty = checkIfSectionEmpty(next_section_id);
             if (isEmpty == true)
             {
                 sections_list.get(next_section_id - 1).setOccupyingTrain_name(trainName);
+//                System.out.println("can pass"+trainName);
                 sections_list.get(current_sec - 1).setOccupyingTrain_name("");
                 moving_train.setOccupying_SectionId(next_section_id);
                 return 1;
@@ -338,15 +342,21 @@ public class InterlockingImpl implements Interlocking
         }
 
         // update firing policies
-        petriNet.update_PointMachine(sections_list);
+        petriNet.update_PointMachine(sections_list, present_train_list);
+        // while
 
         // move a single train
-        for (String train : trainNames)
+//        while (trainNames.length > 0)
+//        {
+        for (int i = 0; i < trainNames.length; i++)
         {
-            movedTrains += moveSingleTrain(train);
-        }
+            int count = moveSingleTrain(trainNames[i]);
 
-        petriNet.reset_to_default();
+            movedTrains += count;
+            petriNet.update_PointMachine(sections_list, present_train_list);
+        }
+        //}
+
 
         return movedTrains;
     }

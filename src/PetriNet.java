@@ -4,31 +4,17 @@ class FiringPolicy
 {
     String policy_name;
     Direction direction;
-    int section_id_1;
-    int section_id_2;
     boolean enabled;
 
-    FiringPolicy(String policy_name,int section_id_1, int section_id_2, Direction direction)
+    FiringPolicy(String policy_name, Direction direction)
     {
         this.policy_name = policy_name;
         this.direction = direction;
-        this.section_id_1 = section_id_1;
-        this.section_id_2 = section_id_2;
     }
 
     String getPolicy_name()
     {
         return this.policy_name;
-    }
-
-    int getSection_id_1()
-    {
-        return this.section_id_1;
-    }
-
-    int getSection_id_2()
-    {
-        return this.section_id_2;
     }
 
     boolean getEnabled()
@@ -170,21 +156,21 @@ public class PetriNet
 
     void init_firingPolicies()
     {
-        FiringPolicy S3S7 = new FiringPolicy("S3S7", 3,7, Direction.BiDirection);
+        FiringPolicy S3S7 = new FiringPolicy("S3S7", Direction.BiDirection);
         policiesList.add(S3S7);
-        FiringPolicy S3S4 = new FiringPolicy("S3S4", 3,4, Direction.BiDirection);
+        FiringPolicy S3S4 = new FiringPolicy("S3S4", Direction.BiDirection);
         policiesList.add(S3S4);
-        FiringPolicy S6S2 = new FiringPolicy("S6S2", 6,2, Direction.North);
+        FiringPolicy S6S2 = new FiringPolicy("S6S2", Direction.North);
         policiesList.add(S6S2);
-        FiringPolicy S1S5 = new FiringPolicy("S1S5", 1,5, Direction.South);
+        FiringPolicy S1S5 = new FiringPolicy("S1S5", Direction.South);
         policiesList.add(S1S5);
-        FiringPolicy S10S6 = new FiringPolicy("S10S6", 10,6, Direction.North);
+        FiringPolicy S10S6 = new FiringPolicy("S10S6", Direction.North);
         policiesList.add(S10S6);
-        FiringPolicy S9S6 = new FiringPolicy("S9S6",9,6, Direction.North);
+        FiringPolicy S9S6 = new FiringPolicy("S9S6", Direction.North);
         policiesList.add(S9S6);
-        FiringPolicy S5S9 = new FiringPolicy("S5S9",5,9, Direction.South);
+        FiringPolicy S5S9 = new FiringPolicy("S5S9", Direction.South);
         policiesList.add(S5S9);
-        FiringPolicy S5S8 = new FiringPolicy("S5S8",5,8, Direction.South);
+        FiringPolicy S5S8 = new FiringPolicy("S5S8", Direction.South);
         policiesList.add(S5S8);
     }
 
@@ -255,44 +241,141 @@ public class PetriNet
         }
     }
 
-    void update_PointMachine(ArrayList<Section> sectionsList)
+    // function to find the index of a train in present_train_list
+    int getTrainPos(String name, ArrayList<Train> trainList)
     {
-        if (sectionsList.get(2).getOccupyingTrain_name().equals("") && sectionsList.get(6).getOccupyingTrain_name().equals(""))
+        int pos;
+        for (int i = 0; i < trainList.size(); i++)
         {
-            pointMachine_changeEnabled(1);
+            if (trainList.get(i).getTrainName().equals(name))
+            {
+                pos = i;
+                return pos;
+            }
         }
-
-        if (sectionsList.get(5).getOccupyingTrain_name().equals(""))
-        {
-            pointMachine_changeEnabled(2);
-        }
-
-        if (sectionsList.get(0).getOccupyingTrain_name().equals(""))
-        {
-            pointMachine_changeEnabled(3);
-        }
-
-        if (sectionsList.get(5).getOccupyingTrain_name().equals("") && sectionsList.get(8).getOccupyingTrain_name().equals(""))
-        {
-            pointMachine_changeEnabled(4);
-        }
-
-        if (sectionsList.get(8).getOccupyingTrain_name().equals(""))
-        {
-            pointMachine_changeEnabled(5);
-        }
-
-        if (sectionsList.get(8).getOccupyingTrain_name().equals(""))
-        {
-            pointMachine_changeEnabled(6);
-        }
+        return -1;
     }
 
-    void reset_to_default()
+    void reset_to_default(int m_id)
+    {
+        PointMachine pointMachine = pointMachineList.get(m_id - 1);
+        ArrayList<FiringPolicy> policies = pointMachine.getControlled_policies();
+
+        if (policies.get(0).getEnabled() == false)
+        {
+            pointMachine_changeEnabled(m_id);
+        }
+
+    }
+
+    void update_PointMachine(ArrayList<Section> sectionsList, ArrayList<Train> trainList)
     {
         for (PointMachine pointMachine: pointMachineList)
         {
-            pointMachine_changeEnabled(pointMachine.getMachine_id());
+            boolean current_second_policy_status = pointMachine.getControlled_policies().get(1).getEnabled();
+
+            // update instruction for point machine 1
+            if (pointMachine.getMachine_id() == 1)
+            {
+                if ((sectionsList.get(2).getOccupyingTrain_name().equals("") && (sectionsList.get(6).getOccupyingTrain_name().equals(""))) && current_second_policy_status == false)
+                {
+                    pointMachine_changeEnabled(1);
+
+                } else if (sectionsList.get(2).getOccupyingTrain_name().equals("") && !sectionsList.get(6).getOccupyingTrain_name().equals("") && current_second_policy_status == false)
+                {
+                    int sec7TrainPos = getTrainPos(sectionsList.get(6).getOccupyingTrain_name(), trainList);
+                    Train sec7Train = trainList.get(sec7TrainPos);
+
+                    if (sec7Train.getTrain_direction() == Direction.South)
+                    {
+                        pointMachine_changeEnabled(1);
+                    }
+                } else if (!sectionsList.get(2).getOccupyingTrain_name().equals("") || !sectionsList.get(6).getOccupyingTrain_name().equals(""))
+                {
+                    reset_to_default(1);
+                }
+            }
+
+            // update instruction for point machine 2
+            if (pointMachine.getMachine_id() == 2)
+            {
+                if (sectionsList.get(5).getOccupyingTrain_name().equals("") && current_second_policy_status == false)
+                {
+                    pointMachine_changeEnabled(2);
+
+                } else {
+                    reset_to_default(2);
+                }
+            }
+
+            // update instruction for point machine 3
+            if (pointMachine.getMachine_id() == 3)
+            {
+                if (sectionsList.get(0).getOccupyingTrain_name().equals("") && current_second_policy_status == false)
+                {
+                    pointMachine_changeEnabled(3);
+                } else {
+                    reset_to_default(3);
+                }
+            }
+
+            // update instruction for point machine 4
+            if (pointMachine.getMachine_id() == 4)
+            {
+                if (sectionsList.get(5).getOccupyingTrain_name().equals("") && (sectionsList.get(8).getOccupyingTrain_name().equals("")) && current_second_policy_status == false)
+                {
+                    pointMachine_changeEnabled(4);
+
+                } else if (sectionsList.get(5).getOccupyingTrain_name().equals("") && !sectionsList.get(8).getOccupyingTrain_name().equals("") && current_second_policy_status == false)
+                {
+                    int sec9TrainPos = getTrainPos(sectionsList.get(8).getOccupyingTrain_name(), trainList);
+                    Train sec9Train = trainList.get(sec9TrainPos);
+
+                    if (sec9Train.getTrain_direction() == Direction.South)
+                    {
+                        pointMachine_changeEnabled(4);
+                    }
+
+                } else if (!sectionsList.get(5).getOccupyingTrain_name().equals("") || !sectionsList.get(8).getOccupyingTrain_name().equals(""))
+                {
+                    reset_to_default(4);
+                }
+            }
+
+            // update instruction for point machine 5
+            if (pointMachine.getMachine_id() == 5)
+            {
+                if (sectionsList.get(8).getOccupyingTrain_name().equals("") && current_second_policy_status == false)
+                {
+                    pointMachine_changeEnabled(5);
+
+                } else {
+                    reset_to_default(5);
+                }
+            }
+
+            // update instruction for point machine 6
+            if (pointMachine.getMachine_id() == 6)
+            {
+                if (sectionsList.get(8).getOccupyingTrain_name().equals("") && current_second_policy_status == false)
+                {
+                    pointMachine_changeEnabled(6);
+
+                } else if (!sectionsList.get(8).getOccupyingTrain_name().equals(""))
+                {
+                    int sec9TrainPos2 = getTrainPos(sectionsList.get(8).getOccupyingTrain_name(), trainList);
+                    Train sec9Train2 = trainList.get(sec9TrainPos2);
+
+                    if (sec9Train2.getTrain_direction() == Direction.South)
+                    {
+                        pointMachine_changeEnabled(6);
+
+                    } else if (sec9Train2.getTrain_direction() == Direction.North)
+                    {
+                        reset_to_default(6);
+                    }
+                }
+            }
         }
     }
 }

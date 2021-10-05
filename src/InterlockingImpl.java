@@ -248,9 +248,6 @@ public class InterlockingImpl implements Interlocking
 
     public int moveSingleTrain(String trainName)
     {
-        System.out.println(trainName);
-        System.out.println(petriNet.getPoliciesList().get(1).getEnabled());
-
         int next_section_id = nextSection_toMove(trainName);
         if (next_section_id == -1)
         {
@@ -290,7 +287,6 @@ public class InterlockingImpl implements Interlocking
             if (isEmpty == true)
             {
                 sections_list.get(next_section_id - 1).setOccupyingTrain_name(trainName);
-//                System.out.println("can pass"+trainName);
                 sections_list.get(current_sec - 1).setOccupyingTrain_name("");
                 moving_train.setOccupying_SectionId(next_section_id);
                 return 1;

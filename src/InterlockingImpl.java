@@ -122,17 +122,16 @@ public class InterlockingImpl implements Interlocking
     ArrayList<Train> present_train_list = new ArrayList<Train>();
     ArrayList<Train> exited_train_list = new ArrayList<Train>();
     ArrayList<Section> sections_list = new ArrayList<Section>();
-    PetriNet petriNet = new PetriNet();
+    PetriNet petriNet;
 
-    // function to call at first to initialize the petri net of the railway system
-    public void initialize_PetriNet()
+    InterlockingImpl()
     {
+        this.petriNet = new PetriNet();
         petriNet.init_railway();
-        sections_list = petriNet.getSectionsList();
+        this.sections_list = petriNet.getSectionsList();
 
         petriNet.init_firingPolicies();
         petriNet.init_pointMachines();
-
     }
 
     // function to check if the train name is unique
@@ -249,6 +248,9 @@ public class InterlockingImpl implements Interlocking
 
     public int moveSingleTrain(String trainName)
     {
+        System.out.println(trainName);
+        System.out.println(petriNet.getPoliciesList().get(1).getEnabled());
+
         int next_section_id = nextSection_toMove(trainName);
         if (next_section_id == -1)
         {
@@ -281,9 +283,6 @@ public class InterlockingImpl implements Interlocking
                 break;
             }
         }
-
-        System.out.println(trainName);
-        System.out.println(petriNet.getPoliciesList().get(7).getEnabled());
 
         if (canPass == true)
         {

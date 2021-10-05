@@ -3,13 +3,11 @@ import java.util.ArrayList;
 class FiringPolicy
 {
     String policy_name;
-    Direction direction;
     boolean enabled;
 
-    FiringPolicy(String policy_name, Direction direction)
+    FiringPolicy(String policy_name)
     {
         this.policy_name = policy_name;
-        this.direction = direction;
     }
 
     String getPolicy_name()
@@ -156,21 +154,21 @@ public class PetriNet
 
     void init_firingPolicies()
     {
-        FiringPolicy S3S7 = new FiringPolicy("S3S7", Direction.BiDirection);
+        FiringPolicy S3S7 = new FiringPolicy("S3S7");
         policiesList.add(S3S7);
-        FiringPolicy S3S4 = new FiringPolicy("S3S4", Direction.BiDirection);
+        FiringPolicy S3S4 = new FiringPolicy("S3S4");
         policiesList.add(S3S4);
-        FiringPolicy S6S2 = new FiringPolicy("S6S2", Direction.North);
+        FiringPolicy S6S2 = new FiringPolicy("S6S2");
         policiesList.add(S6S2);
-        FiringPolicy S1S5 = new FiringPolicy("S1S5", Direction.South);
+        FiringPolicy S1S5 = new FiringPolicy("S1S5");
         policiesList.add(S1S5);
-        FiringPolicy S10S6 = new FiringPolicy("S10S6", Direction.North);
+        FiringPolicy S10S6 = new FiringPolicy("S10S6");
         policiesList.add(S10S6);
-        FiringPolicy S9S6 = new FiringPolicy("S9S6", Direction.North);
+        FiringPolicy S9S6 = new FiringPolicy("S9S6");
         policiesList.add(S9S6);
-        FiringPolicy S5S9 = new FiringPolicy("S5S9", Direction.South);
+        FiringPolicy S5S9 = new FiringPolicy("S5S9");
         policiesList.add(S5S9);
-        FiringPolicy S5S8 = new FiringPolicy("S5S8", Direction.South);
+        FiringPolicy S5S8 = new FiringPolicy("S5S8");
         policiesList.add(S5S8);
     }
 
@@ -270,6 +268,8 @@ public class PetriNet
 
     void update_PointMachine(ArrayList<Section> sectionsList, ArrayList<Train> trainList)
     {
+        int S3S4_blocked_already = 0;
+
         for (PointMachine pointMachine: pointMachineList)
         {
             boolean current_second_policy_status = pointMachine.getControlled_policies().get(1).getEnabled();
@@ -281,7 +281,9 @@ public class PetriNet
                 {
                     pointMachine_changeEnabled(1);
 
-                } else if (sectionsList.get(2).getOccupyingTrain_name().equals("") && !sectionsList.get(6).getOccupyingTrain_name().equals("") && current_second_policy_status == false)
+                }
+
+                if (sectionsList.get(2).getOccupyingTrain_name().equals("") && !sectionsList.get(6).getOccupyingTrain_name().equals("") && current_second_policy_status == false)
                 {
                     int sec7TrainPos = getTrainPos(sectionsList.get(6).getOccupyingTrain_name(), trainList);
                     Train sec7Train = trainList.get(sec7TrainPos);
@@ -290,16 +292,19 @@ public class PetriNet
                     {
                         pointMachine_changeEnabled(1);
                     }
-                } else if (!sectionsList.get(2).getOccupyingTrain_name().equals("") || !sectionsList.get(6).getOccupyingTrain_name().equals(""))
+                }
+
+                if (!sectionsList.get(2).getOccupyingTrain_name().equals("") || !sectionsList.get(6).getOccupyingTrain_name().equals(""))
                 {
                     reset_to_default(1);
+                    S3S4_blocked_already += 1;
                 }
             }
 
             // update instruction for point machine 2
             if (pointMachine.getMachine_id() == 2)
             {
-                if (sectionsList.get(5).getOccupyingTrain_name().equals("") && current_second_policy_status == false)
+                if (sectionsList.get(5).getOccupyingTrain_name().equals("") && current_second_policy_status == false && S3S4_blocked_already == 0)
                 {
                     pointMachine_changeEnabled(2);
 
@@ -311,9 +316,10 @@ public class PetriNet
             // update instruction for point machine 3
             if (pointMachine.getMachine_id() == 3)
             {
-                if (sectionsList.get(0).getOccupyingTrain_name().equals("") && current_second_policy_status == false)
+                if (sectionsList.get(0).getOccupyingTrain_name().equals("") && current_second_policy_status == false && S3S4_blocked_already == 0)
                 {
                     pointMachine_changeEnabled(3);
+
                 } else {
                     reset_to_default(3);
                 }

@@ -5,7 +5,6 @@ enum Direction
 {
     North,
     South,
-    BiDirection
 }
 
 // Track section (= a place in the Petri Net)
@@ -82,6 +81,7 @@ class Train
     int occupying_SectionId;
     int dest_SectionId;
     Direction train_direction;
+    int moved_times;
 
     Train(String name, Direction dir, int destId)
     {
@@ -114,6 +114,21 @@ class Train
     {
         return this.train_direction;
     }
+
+    int getMoved_times()
+    {
+        return this.moved_times;
+    }
+
+    void incrementMovedTimes_By1()
+    {
+        this.moved_times = 1;
+    }
+
+    void reset_movedTimes_zero()
+    {
+        this.moved_times = 0;
+    }
 }
 
 public class InterlockingImpl implements Interlocking
@@ -134,13 +149,36 @@ public class InterlockingImpl implements Interlocking
         petriNet.init_pointMachines();
     }
 
-    // function to check if the train name is unique
-    boolean checkIfTrainExists(String name)
+    boolean checkIfTrainInRailCorridor(String name)
     {
         boolean exist = false;
         for (int i = 0; i < present_train_list.size(); i++)
         {
             if (present_train_list.get(i).getTrainName().equals(name))
+            {
+                exist = true;
+                break;
+            }
+        }
+        return exist;
+    }
+
+    // function to check if the train name is unique
+    boolean checkIfTrainNameUsed(String name)
+    {
+        boolean exist = false;
+        for (int i = 0; i < present_train_list.size(); i++)
+        {
+            if (present_train_list.get(i).getTrainName().equals(name))
+            {
+                exist = true;
+                break;
+            }
+        }
+
+        for (int i = 0; i < exited_train_list.size(); i++)
+        {
+            if (exited_train_list.get(i).getTrainName().equals(name))
             {
                 exist = true;
                 break;
@@ -181,11 +219,23 @@ public class InterlockingImpl implements Interlocking
         return -1;
     }
 
+    boolean check_ifTrainExistsButLeft(String trainName)
+    {
+        for (int i = 0; i < exited_train_list.size(); i++)
+        {
+            if (exited_train_list.get(i).getTrainName().equals(trainName))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     public void addTrain(String trainName, int entryTrackSection, int destinationTrackSection)
     {
         // avoid same train name and invalid path
-        boolean name_exist = checkIfTrainExists(trainName);
+        boolean name_exist = checkIfTrainNameUsed(trainName);
         boolean path_valid = checkValidPath(entryTrackSection, destinationTrackSection);
         if (name_exist == true || path_valid == false)
         {
@@ -246,6 +296,55 @@ public class InterlockingImpl implements Interlocking
         }
     }
 
+    // trains section 6 and 1 always have priority to move first
+    String[] sort_train_list(String[] original_list)
+    {
+        String[] listToReturn;
+
+        for (int i = 0; i < original_list.length; i++)
+        {
+            if (getTrain(original_list[i]) == 6)
+            {
+                String passenger_train_1 = original_list[i];
+                int p1_index = i;
+
+                if (getTrain(original_list[0]) != 1)
+                {
+                    String tmp2 = original_list[0];
+                    original_list[0] = passenger_train_1;
+                    original_list[p1_index] = tmp2;
+
+                } else {
+                    String tmp2 = original_list[1];
+                    original_list[1] = passenger_train_1;
+                    original_list[p1_index] = tmp2;
+                }
+            }
+
+            if (getTrain(original_list[i]) == 1)
+            {
+                String passenger_train_2 = original_list[i];
+                int p2_index = i;
+
+                if (getTrain(original_list[0]) != 6)
+                {
+                    String tmp2 = original_list[0];
+                    original_list[0] = passenger_train_2;
+                    original_list[p2_index] = tmp2;
+
+                } else {
+                    String tmp2 = original_list[1];
+                    original_list[1] = passenger_train_2;
+                    original_list[p2_index] = tmp2;
+                }
+            }
+        }
+
+        listToReturn = original_list;
+        return listToReturn;
+    }
+
+    // function to move each train in the list
     public int moveSingleTrain(String trainName)
     {
         int next_section_id = nextSection_toMove(trainName);
@@ -286,6 +385,7 @@ public class InterlockingImpl implements Interlocking
             boolean isEmpty = checkIfSectionEmpty(next_section_id);
             if (isEmpty == true)
             {
+                moving_train.incrementMovedTimes_By1();
                 sections_list.get(next_section_id - 1).setOccupyingTrain_name(trainName);
                 sections_list.get(current_sec - 1).setOccupyingTrain_name("");
                 moving_train.setOccupying_SectionId(next_section_id);
@@ -299,16 +399,6 @@ public class InterlockingImpl implements Interlocking
 
     }
 
-    /**
-     * The listed trains proceed to the next track section.
-     * Trains only move if they are able to do so, otherwise they remain in their current section.
-     * When a train reaches its destination track section, it exits the rail corridor next time it moves.
-     *
-     * @param   trainNames The names of the trains to move.
-     * @return  The number of trains that have moved.
-     * @throws  IllegalArgumentException
-     *              if the train name does not exist or is no longer in the rail corridor
-     */
     @Override
     public int moveTrains(String[] trainNames)
     {
@@ -317,7 +407,7 @@ public class InterlockingImpl implements Interlocking
 
         for (String train: trainNames)
         {
-            boolean validTrain = checkIfTrainExists(train);
+            boolean validTrain = checkIfTrainInRailCorridor(train);
             if (validTrain == false)
             {
                 throw new IllegalArgumentException();
@@ -336,22 +426,46 @@ public class InterlockingImpl implements Interlocking
             }
         }
 
+        // reset their moving times to 0
+        for (String scanning_train : trainNames)
+        {
+            int pos = getTrainPos(scanning_train);
+            Train train = present_train_list.get(pos);
+            train.reset_movedTimes_zero();
+        }
+
         // update firing policies
         petriNet.update_PointMachine(sections_list, present_train_list);
-        // while
 
         // move a single train
-//        while (trainNames.length > 0)
-//        {
-        for (int i = 0; i < trainNames.length; i++)
-        {
-            int count = moveSingleTrain(trainNames[i]);
+        String[] sortedlist = sort_train_list(trainNames);
+        int first_round_count = 0;
 
+        for (int i = 0; i < sortedlist.length; i++)
+        {
+            int count = moveSingleTrain(sortedlist[i]);
+            first_round_count += count;
             movedTrains += count;
             petriNet.update_PointMachine(sections_list, present_train_list);
         }
-        //}
 
+        while (first_round_count > 0)
+        {
+            first_round_count = 0;
+            for (int i = 0; i < sortedlist.length; i++)
+            {
+                int pos = getTrainPos(sortedlist[i]);
+                Train current_train = present_train_list.get(pos);
+
+                if (current_train.getMoved_times() == 0)
+                {
+                    int count = moveSingleTrain(sortedlist[i]);
+                    first_round_count += count;
+                    movedTrains += count;
+                    petriNet.update_PointMachine(sections_list, present_train_list);
+                }
+            }
+        }
 
         return movedTrains;
     }
@@ -360,9 +474,15 @@ public class InterlockingImpl implements Interlocking
     public int getTrain(String trainName)
     {
         int trainPos = getTrainPos(trainName);
-        if (trainPos == -1)
+        boolean exitedTrain = check_ifTrainExistsButLeft(trainName);
+        if (trainPos == -1 && exitedTrain == false)
         {
             throw new IllegalArgumentException();
+        }
+
+        if (exitedTrain)
+        {
+            return -1;
         }
 
         int occupying_section = present_train_list.get(trainPos).getOccupying_SectionId();
@@ -378,7 +498,14 @@ public class InterlockingImpl implements Interlocking
         }
 
         String occupying_trainName = sections_list.get(trackSection - 1).getOccupyingTrain_name();
-        return occupying_trainName;
+
+        if (!occupying_trainName.equals(""))
+        {
+            return occupying_trainName;
+        } else {
+            return null;
+        }
+
     }
 
 }

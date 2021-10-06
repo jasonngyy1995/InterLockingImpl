@@ -1,7 +1,4 @@
 import org.junit.Test;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-
 import static org.junit.Assert.*;
 
 public class InterlockingImpl_Test
@@ -19,9 +16,28 @@ public class InterlockingImpl_Test
     {
         InterlockingImpl interlockingImpl = new InterlockingImpl();
         interlockingImpl.addTrain("A", 3, 11);
+        interlockingImpl.addTrain("A", 4, 3);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void test_repeatedNameAsExitedTrain()
+    {
+        InterlockingImpl interlockingImpl = new InterlockingImpl();
+        interlockingImpl.addTrain("A", 4, 3);
+        String[] trainsToMove1 = {"A"};
+        interlockingImpl.moveTrains(trainsToMove1);
+
+        interlockingImpl.addTrain("B", 11, 3);
+        String[] trainsToMove2 = {"B"};
+        interlockingImpl.moveTrains(trainsToMove2);
+
+        assertEquals(interlockingImpl.getSection(3),null);
+        assertEquals(interlockingImpl.getTrain("A"),-1);
+        assertEquals(interlockingImpl.exited_train_list.get(0).getTrainName(),"A");
+
         interlockingImpl.addTrain("A", 3, 4);
     }
-//
+
     @Test(expected = IllegalStateException.class)
     public void test_occupiedSection()
     {
@@ -69,7 +85,7 @@ public class InterlockingImpl_Test
         assertEquals(interlockingImpl.present_train_list.get(0).getDest_SectionId(),11);
         assertEquals(interlockingImpl.present_train_list.get(0).getTrain_direction(),Direction.South);
     }
-    //
+
     @Test
     public void check_moveTrainOnce()
     {
@@ -81,18 +97,20 @@ public class InterlockingImpl_Test
 
         assertEquals(interlockingImpl.getTrain("A"),7);
         assertEquals(interlockingImpl.getSection(7),"A");
-        assertEquals(interlockingImpl.getSection(3),"");
+        assertEquals(interlockingImpl.getSection(3),null);
 
         String[] trainsToMove2 = {"A"};
         interlockingImpl.moveTrains(trainsToMove2);
         assertEquals(interlockingImpl.getTrain("A"),11);
         assertEquals(interlockingImpl.getSection(11),"A");
-        assertEquals(interlockingImpl.getSection(7),"");
+        assertEquals(interlockingImpl.getSection(7),null);
 
         interlockingImpl.addTrain("B", 10,2);
         String[] trainsToMove3 = {"B"};
         interlockingImpl.moveTrains(trainsToMove3);
         assertEquals(interlockingImpl.exited_train_list.get(0).getTrainName(),"A");
+        assertEquals(interlockingImpl.getTrain("A"),-1);
+        assertEquals(interlockingImpl.getSection(11),null);
         assertEquals(interlockingImpl.getSection(6),"B");
 
         interlockingImpl.addTrain("C", 10,2);
@@ -145,22 +163,29 @@ public class InterlockingImpl_Test
         interlockingImpl.addTrain("B", 1, 9);
 
         String[] trainsToMove1 = {"A","B"};
-        interlockingImpl.moveTrains(trainsToMove1);
-        interlockingImpl.addTrain("C", 1, 8);
-        String[] trainsToMove2 = {"B", "C"};
-        interlockingImpl.moveTrains(trainsToMove2);
+        int moved_trains1 = interlockingImpl.moveTrains(trainsToMove1);
+        assertEquals(moved_trains1,2);
         assertEquals(interlockingImpl.getTrain("A"), 6);
         assertEquals(interlockingImpl.getSection(6), "A");
+        assertEquals(interlockingImpl.getTrain("B"), 5);
+        assertEquals(interlockingImpl.getSection(5), "B");
+
+        interlockingImpl.addTrain("C", 1, 8);
+        String[] trainsToMove2 = {"B", "C"};
+        int moved_trains2 = interlockingImpl.moveTrains(trainsToMove2);
+        assertEquals(moved_trains2,2);
         assertEquals(interlockingImpl.getTrain("B"), 9);
         assertEquals(interlockingImpl.getSection(9), "B");
         assertEquals(interlockingImpl.getTrain("C"), 5);
         assertEquals(interlockingImpl.getSection(5), "C");
 
         String[] trainsToMove3 = {"C"};
-        interlockingImpl.moveTrains(trainsToMove3);
-        assertEquals(interlockingImpl.getSection(9), "");
-        assertEquals(interlockingImpl.getTrain("C"), 8);
+        int moved_trains3 = interlockingImpl.moveTrains(trainsToMove3);
+        assertEquals(moved_trains3,1);
+        assertEquals(interlockingImpl.getSection(9), null);
+        assertEquals(interlockingImpl.getTrain("B"), -1);
         assertEquals(interlockingImpl.getSection(8), "C");
+        assertEquals(interlockingImpl.getTrain("C"), 8);
     }
 
     @Test
@@ -223,10 +248,9 @@ public class InterlockingImpl_Test
 
         String[] trainsToMove2 = {"A","B"};
         interlockingImpl.moveTrains(trainsToMove2);
-//        assertEquals(interlockingImpl.getTrain("B"), 3);
-//        assertEquals(interlockingImpl.getSection(3), "B");
+        assertEquals(interlockingImpl.getTrain("B"), 3);
+        assertEquals(interlockingImpl.getSection(3), "B");
         assertEquals(interlockingImpl.getTrain("A"), 4);
         assertEquals(interlockingImpl.getSection(4), "A");
-
     }
 }

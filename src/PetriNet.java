@@ -33,7 +33,6 @@ class PointMachine
 {
     int machine_id;
     ArrayList<FiringPolicy> controlled_policies = new ArrayList<FiringPolicy>();
-    String current_enablePolicy;
 
     // constructor
     PointMachine(int assigned_id)
@@ -57,18 +56,6 @@ class PointMachine
     ArrayList<FiringPolicy> getControlled_policies()
     {
         return this.controlled_policies;
-    }
-
-    // setters
-    void setCurrent_enablePolicy(String policyName)
-    {
-        this.current_enablePolicy = policyName;
-    }
-
-    // getters
-    String getCurrent_enablePolicy()
-    {
-        return this.current_enablePolicy;
     }
 
     // set the default first and second prioritized firing policies

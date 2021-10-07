@@ -5,11 +5,13 @@ class FiringPolicy
     String policy_name;
     boolean enabled;
 
+    // constructor
     FiringPolicy(String policy_name)
     {
         this.policy_name = policy_name;
     }
 
+    // getters
     String getPolicy_name()
     {
         return this.policy_name;
@@ -20,6 +22,7 @@ class FiringPolicy
         return this.enabled;
     }
 
+    // setters
     void setEnabled(boolean permission)
     {
         this.enabled = permission;
@@ -32,36 +35,43 @@ class PointMachine
     ArrayList<FiringPolicy> controlled_policies = new ArrayList<FiringPolicy>();
     String current_enablePolicy;
 
+    // constructor
     PointMachine(int assigned_id)
     {
         this.machine_id = assigned_id;
     }
 
+    // getter
     int getMachine_id()
     {
         return this.machine_id;
     }
 
+    // function to add policies to point machine
     void add_policy(FiringPolicy policy)
     {
         this.controlled_policies.add(policy);
     }
 
+    // getter
     ArrayList<FiringPolicy> getControlled_policies()
     {
         return this.controlled_policies;
     }
 
+    // setters
     void setCurrent_enablePolicy(String policyName)
     {
         this.current_enablePolicy = policyName;
     }
 
+    // getters
     String getCurrent_enablePolicy()
     {
         return this.current_enablePolicy;
     }
 
+    // set the default first and second prioritized firing policies
     void default_enabled_policy(int index, boolean permission)
     {
         this.controlled_policies.get(index).setEnabled(permission);
@@ -75,6 +85,7 @@ public class PetriNet
     ArrayList<FiringPolicy> policiesList = new ArrayList<FiringPolicy>();
     ArrayList<PointMachine> pointMachineList = new ArrayList<PointMachine>();
 
+    // function to initialize the railway system which is formed by sections and transitions
     void init_railway()
     {
         // section 1 - 11 are track sections
@@ -147,11 +158,13 @@ public class PetriNet
         section_11.addDestination(sectionsList.get(2));
     }
 
+    // getters
     ArrayList<Section> getSectionsList()
     {
         return sectionsList;
     }
 
+    // function to create all firing policies in accordance to the petri net design
     void init_firingPolicies()
     {
         FiringPolicy S3S7 = new FiringPolicy("S3S7");
@@ -172,11 +185,13 @@ public class PetriNet
         policiesList.add(S5S8);
     }
 
+    // getter
     ArrayList<FiringPolicy> getPoliciesList()
     {
         return policiesList;
     }
 
+    // function to create a point machine
     void create_pointMachine(int machine_id, int prioritized_section_1, int prioritized_section_2, int second_section_1, int second_section_2)
     {
         PointMachine pointMachine = new PointMachine(machine_id);
@@ -204,9 +219,11 @@ public class PetriNet
         pointMachine.default_enabled_policy(0,true);
         pointMachine.default_enabled_policy(1,false);
 
+        // add it to the list of total point machines
         pointMachineList.add(pointMachine);
     }
 
+    // function to call to set up 6 point machines according to the petri net design
     void init_pointMachines()
     {
         create_pointMachine(1,3,7,3,4);
@@ -217,11 +234,13 @@ public class PetriNet
         create_pointMachine(6,9,6,5,8);
     }
 
+    // getter
     ArrayList<PointMachine> getPointMachineList()
     {
         return pointMachineList;
     }
 
+    // function for changing the enabled policy of a point machine
     void pointMachine_changeEnabled(int machine_id)
     {
         PointMachine target_machine = pointMachineList.get(machine_id - 1);
@@ -254,6 +273,7 @@ public class PetriNet
         return -1;
     }
 
+    // function to reset the default prioritized policy of a point machine
     void reset_to_default(int m_id)
     {
         PointMachine pointMachine = pointMachineList.get(m_id - 1);
@@ -266,8 +286,10 @@ public class PetriNet
 
     }
 
+    // function to check if enabled policy of each point machine can be changed in current railway corridor
     void update_PointMachine(ArrayList<Section> sectionsList, ArrayList<Train> trainList)
     {
+        // controller of disallowing any possible change to S3S4 later
         int S3S4_blocked_already = 0;
 
         for (PointMachine pointMachine: pointMachineList)
@@ -277,26 +299,38 @@ public class PetriNet
             // update instruction for point machine 1
             if (pointMachine.getMachine_id() == 1)
             {
-                if ((sectionsList.get(2).getOccupyingTrain_name().equals("") && (sectionsList.get(6).getOccupyingTrain_name().equals(""))) && current_second_policy_status == false)
+                // if section 3 and 7 are empty and the current enabled policy is still the default one
+                if (sectionsList.get(2).getOccupyingTrain_name().equals("") && sectionsList.get(6).getOccupyingTrain_name().equals("") && current_second_policy_status == false)
                 {
                     pointMachine_changeEnabled(1);
 
                 }
 
-                if (sectionsList.get(2).getOccupyingTrain_name().equals("") && !sectionsList.get(6).getOccupyingTrain_name().equals("") && current_second_policy_status == false)
+                // if section 3 is empty and section 7 is not empty
+                if (sectionsList.get(2).getOccupyingTrain_name().equals("") && !sectionsList.get(6).getOccupyingTrain_name().equals(""))
                 {
                     int sec7TrainPos = getTrainPos(sectionsList.get(6).getOccupyingTrain_name(), trainList);
                     Train sec7Train = trainList.get(sec7TrainPos);
 
-                    if (sec7Train.getTrain_direction() == Direction.South)
+                    // check if the current enabled policy is still the default one and section 7 train is to South, if yes, no collision and change is triggered
+                    if (sec7Train.getTrain_direction() == Direction.South && current_second_policy_status == false)
                     {
                         pointMachine_changeEnabled(1);
+
+                        // if section 7 train is to North, change to default policy despite any situation
+                    } else if (sec7Train.getTrain_direction() == Direction.North)
+                    {
+                        reset_to_default(1);
+                        // inform other point machines S3S4 is blocked
+                        S3S4_blocked_already += 1;
                     }
                 }
 
-                if (!sectionsList.get(2).getOccupyingTrain_name().equals("") || !sectionsList.get(6).getOccupyingTrain_name().equals(""))
+                // if section 3 is empty
+                if (!sectionsList.get(2).getOccupyingTrain_name().equals(""))
                 {
                     reset_to_default(1);
+                    // inform other point machines S3S4 is blocked
                     S3S4_blocked_already += 1;
                 }
             }
@@ -304,6 +338,7 @@ public class PetriNet
             // update instruction for point machine 2
             if (pointMachine.getMachine_id() == 2)
             {
+                // if section 6 is empty and the current enabled policy is still the default one and S3S4 is not blocked by point machine 1
                 if (sectionsList.get(5).getOccupyingTrain_name().equals("") && current_second_policy_status == false && S3S4_blocked_already == 0)
                 {
                     pointMachine_changeEnabled(2);
@@ -316,6 +351,7 @@ public class PetriNet
             // update instruction for point machine 3
             if (pointMachine.getMachine_id() == 3)
             {
+                // if section 6 is empty and the current enabled policy is still the default one and S3S4 is not blocked by point machine 1
                 if (sectionsList.get(0).getOccupyingTrain_name().equals("") && current_second_policy_status == false && S3S4_blocked_already == 0)
                 {
                     pointMachine_changeEnabled(3);
@@ -328,20 +364,24 @@ public class PetriNet
             // update instruction for point machine 4
             if (pointMachine.getMachine_id() == 4)
             {
+                // if section 6 and 9 are empty and the current enabled policy is still the default one
                 if (sectionsList.get(5).getOccupyingTrain_name().equals("") && (sectionsList.get(8).getOccupyingTrain_name().equals("")) && current_second_policy_status == false)
                 {
                     pointMachine_changeEnabled(4);
 
+                    // if section 6 is empty and the current enabled policy is still the default one
                 } else if (sectionsList.get(5).getOccupyingTrain_name().equals("") && !sectionsList.get(8).getOccupyingTrain_name().equals("") && current_second_policy_status == false)
                 {
                     int sec9TrainPos = getTrainPos(sectionsList.get(8).getOccupyingTrain_name(), trainList);
                     Train sec9Train = trainList.get(sec9TrainPos);
 
+                    // check if section 9 train is to South, if yes, no collision and change is triggered
                     if (sec9Train.getTrain_direction() == Direction.South)
                     {
                         pointMachine_changeEnabled(4);
                     }
 
+                    // if section 6 and 9 are not empty
                 } else if (!sectionsList.get(5).getOccupyingTrain_name().equals("") || !sectionsList.get(8).getOccupyingTrain_name().equals(""))
                 {
                     reset_to_default(4);
@@ -351,6 +391,7 @@ public class PetriNet
             // update instruction for point machine 5
             if (pointMachine.getMachine_id() == 5)
             {
+                // if section 9 is empty and the current enabled policy is still the default one
                 if (sectionsList.get(8).getOccupyingTrain_name().equals("") && current_second_policy_status == false)
                 {
                     pointMachine_changeEnabled(5);
@@ -363,6 +404,7 @@ public class PetriNet
             // update instruction for point machine 6
             if (pointMachine.getMachine_id() == 6)
             {
+                // if section 9 is empty and the current enabled policy is still the default one
                 if (sectionsList.get(8).getOccupyingTrain_name().equals("") && current_second_policy_status == false)
                 {
                     pointMachine_changeEnabled(6);
@@ -372,6 +414,7 @@ public class PetriNet
                     int sec9TrainPos2 = getTrainPos(sectionsList.get(8).getOccupyingTrain_name(), trainList);
                     Train sec9Train2 = trainList.get(sec9TrainPos2);
 
+                    // check if section 9 train is to South, if yes, no collision and change is triggered
                     if (sec9Train2.getTrain_direction() == Direction.South)
                     {
                         pointMachine_changeEnabled(6);

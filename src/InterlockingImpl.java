@@ -15,17 +15,20 @@ class Section
     ArrayList<Transition> transitionsList = new ArrayList<Transition>();
     ArrayList<Section> possibleDestination = new ArrayList<Section>();;
 
+    // constructor
     Section(int sectionId, String occ_train)
     {
         this.sectionId = sectionId;
         this.occupyingTrain_name = occ_train;
     }
 
+    // getter
     int getSectionId()
     {
         return this.sectionId;
     }
 
+    // setter and getter of train in section
     void setOccupyingTrain_name(String train_name)
     {
         this.occupyingTrain_name = train_name;
@@ -36,16 +39,19 @@ class Section
         return this.occupyingTrain_name;
     }
 
+    // function to add a transition into a section
     void addTransition(Transition tran)
     {
         this.transitionsList.add(tran);
     }
 
+    // getter
     ArrayList<Transition> getTransitionsList()
     {
         return this.transitionsList;
     }
 
+    // function to add a destination into a section
     void addDestination(Section dest)
     {
         this.possibleDestination.add(dest);
@@ -58,12 +64,14 @@ class Transition
     Direction train_direction;
     int next_section_id;
 
+    // constructor
     Transition(Direction dir, int next_section_id)
     {
         this.train_direction = dir;
         this.next_section_id = next_section_id;
     }
 
+    // getters
     Direction getTransition_dir()
     {
         return this.train_direction;
@@ -83,6 +91,7 @@ class Train
     Direction train_direction;
     int moved_times;
 
+    // constructor
     Train(String name, Direction dir, int destId)
     {
         this.trainName = name;
@@ -90,11 +99,13 @@ class Train
         this.dest_SectionId = destId;
     }
 
+    // getter of train name
     String getTrainName()
     {
         return this.trainName;
     }
 
+    // setter and getter of the section id the train is in
     void setOccupying_SectionId(int id)
     {
         this.occupying_SectionId = id;
@@ -105,50 +116,63 @@ class Train
         return this.occupying_SectionId;
     }
 
+    // getter of the train destination
     int getDest_SectionId()
     {
         return this.dest_SectionId;
     }
 
+    // getter of the train direction
     Direction getTrain_direction()
     {
         return this.train_direction;
     }
 
+    // getter of train moved times
     int getMoved_times()
     {
         return this.moved_times;
     }
 
+    // only one move is allowed for a train in each round
     void incrementMovedTimes_By1()
     {
         this.moved_times = 1;
     }
 
+    // reset the moved times to zero
     void reset_movedTimes_zero()
     {
         this.moved_times = 0;
     }
 }
 
+// Class InterlockingImpl which implements the Interlocking Interface
 public class InterlockingImpl implements Interlocking
 {
-    // Store all the trains in present
+    // Store all the trains in the railway corridor
     ArrayList<Train> present_train_list = new ArrayList<Train>();
+    // Store all the trains exited the railway corridor
     ArrayList<Train> exited_train_list = new ArrayList<Train>();
+    // Store all the sections of petri net
     ArrayList<Section> sections_list = new ArrayList<Section>();
     PetriNet petriNet;
 
+    // constructor - initialize the petri net
     InterlockingImpl()
     {
         this.petriNet = new PetriNet();
+        // initialize the sections and transitions of the petri net
         petriNet.init_railway();
         this.sections_list = petriNet.getSectionsList();
 
+        // initialize the firing policies of petri net
         petriNet.init_firingPolicies();
+        // initialize the point machines of the petri net
         petriNet.init_pointMachines();
     }
 
+    // function to check if the train is in the railway corridor
     boolean checkIfTrainInRailCorridor(String name)
     {
         boolean exist = false;
@@ -167,6 +191,8 @@ public class InterlockingImpl implements Interlocking
     boolean checkIfTrainNameUsed(String name)
     {
         boolean exist = false;
+
+        // check if the name used by trains in railway corridor
         for (int i = 0; i < present_train_list.size(); i++)
         {
             if (present_train_list.get(i).getTrainName().equals(name))
@@ -176,6 +202,7 @@ public class InterlockingImpl implements Interlocking
             }
         }
 
+        // check if the name used by exited trains
         for (int i = 0; i < exited_train_list.size(); i++)
         {
             if (exited_train_list.get(i).getTrainName().equals(name))
@@ -219,6 +246,7 @@ public class InterlockingImpl implements Interlocking
         return -1;
     }
 
+    // check if the train is an exited train
     boolean check_ifTrainExistsButLeft(String trainName)
     {
         for (int i = 0; i < exited_train_list.size(); i++)
@@ -249,8 +277,11 @@ public class InterlockingImpl implements Interlocking
         }
 
         Section enterSection = sections_list.get(entryTrackSection - 1);
+        // entry sections only have one transition and one direction to go
         Direction newTrain_dir = enterSection.transitionsList.get(0).train_direction;
+        // create a new train
         Train newTrain = new Train(trainName, newTrain_dir, destinationTrackSection);
+        // set the occupying train of the entry section as the new train
         enterSection.setOccupyingTrain_name(trainName);
         newTrain.setOccupying_SectionId(entryTrackSection);
 
@@ -264,17 +295,20 @@ public class InterlockingImpl implements Interlocking
         int trainPos = getTrainPos(trainName);
         Train moving_train = present_train_list.get(trainPos);
 
+        // the current section the train is occupying
         int current_sec = moving_train.getOccupying_SectionId();
         ArrayList<Transition> sec_tran = sections_list.get(current_sec - 1).getTransitionsList();
 
         for (int i = 0; i < sec_tran.size(); i++)
         {
+            // if is able to move to destination
             if (sec_tran.get(i).getNext_section_id() == moving_train.getDest_SectionId())
             {
                 Transition next_tran = sec_tran.get(i);
                 id_toReturn = next_tran.getNext_section_id();
                 break;
 
+                // else, use transition with the same direction of train
             } else if (sec_tran.get(i).getTransition_dir() == moving_train.getTrain_direction())
             {
                 Transition next_tran = sec_tran.get(i);
@@ -285,6 +319,7 @@ public class InterlockingImpl implements Interlocking
         return id_toReturn;
     }
 
+    // check if the section is empty
     boolean checkIfSectionEmpty(int sectionId)
     {
         Section sec = sections_list.get(sectionId - 1);
@@ -361,6 +396,7 @@ public class InterlockingImpl implements Interlocking
         boolean canPass = true;
         String policy_to_check;
 
+        // S3 and S7, S3 and S4 can travel in both direction but share the same firing policy respectively
         if (current_sec == 7 && next_section_id == 3 || current_sec == 4 && next_section_id == 3)
         {
             policy_to_check = "S"+next_section_id+"S"+current_sec;
@@ -370,6 +406,7 @@ public class InterlockingImpl implements Interlocking
 
         ArrayList<FiringPolicy> policiesList = petriNet.getPoliciesList();
 
+        // Firstly, check if the firing policy which controls the transition to the next section is enabled by the point machine
         for (int i = 0; i < policiesList.size(); i++)
         {
             FiringPolicy policy = policiesList.get(i);
@@ -380,6 +417,7 @@ public class InterlockingImpl implements Interlocking
             }
         }
 
+        // If is enabled, check if the next section to go is empty
         if (canPass == true)
         {
             boolean isEmpty = checkIfSectionEmpty(next_section_id);
@@ -405,6 +443,7 @@ public class InterlockingImpl implements Interlocking
         // total number of moved successfully trains
         int movedTrains = 0;
 
+        // check if all trains are existed in the railway corridor
         for (String train: trainNames)
         {
             boolean validTrain = checkIfTrainInRailCorridor(train);
@@ -426,7 +465,7 @@ public class InterlockingImpl implements Interlocking
             }
         }
 
-        // reset their moving times to 0
+        // reset moving times of trains in railway corridor to 0
         for (String scanning_train : trainNames)
         {
             int pos = getTrainPos(scanning_train);
@@ -441,14 +480,17 @@ public class InterlockingImpl implements Interlocking
         String[] sortedlist = sort_train_list(trainNames);
         int first_round_count = 0;
 
+        // first round of moving trains
         for (int i = 0; i < sortedlist.length; i++)
         {
             int count = moveSingleTrain(sortedlist[i]);
             first_round_count += count;
             movedTrains += count;
+            // update firing policies after each move
             petriNet.update_PointMachine(sections_list, present_train_list);
         }
 
+        // in next round, move trains until no train can move
         while (first_round_count > 0)
         {
             first_round_count = 0;
@@ -505,7 +547,5 @@ public class InterlockingImpl implements Interlocking
         } else {
             return null;
         }
-
     }
-
 }

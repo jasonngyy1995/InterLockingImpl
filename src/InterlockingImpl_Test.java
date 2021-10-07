@@ -235,7 +235,7 @@ public class InterlockingImpl_Test
     }
 
     @Test
-    public void check_firingPolicy_S3S4_S3S7() {
+    public void check_firingPolicy_S3S4_S3S7_1() {
         InterlockingImpl interlockingImpl = new InterlockingImpl();
 
         interlockingImpl.addTrain("A", 4, 3);
@@ -252,5 +252,30 @@ public class InterlockingImpl_Test
         assertEquals(interlockingImpl.getSection(3), "B");
         assertEquals(interlockingImpl.getTrain("A"), 4);
         assertEquals(interlockingImpl.getSection(4), "A");
+    }
+
+    @Test
+    public void check_firingPolicy_S3S4_S3S7_2() {
+        InterlockingImpl interlockingImpl = new InterlockingImpl();
+
+        interlockingImpl.addTrain("A", 4, 3);
+        interlockingImpl.addTrain("B", 3, 11);
+
+        String[] trainsToMove = {"B","A"};
+        int first_round_moved = interlockingImpl.moveTrains(trainsToMove);
+        assertEquals(interlockingImpl.getTrain("B"), 7);
+        assertEquals(interlockingImpl.getSection(7), "B");
+        assertEquals(interlockingImpl.getTrain("A"), 3);
+        assertEquals(interlockingImpl.getSection(3), "A");
+        assertEquals(first_round_moved, 2);
+
+        String[] trainsToMove2 = {"B"};
+        int second_round_moved = interlockingImpl.moveTrains(trainsToMove2);
+        assertEquals(interlockingImpl.getTrain("B"), 11);
+        assertEquals(interlockingImpl.getSection(11), "B");
+        assertEquals(interlockingImpl.getTrain("A"), -1);
+        assertEquals(interlockingImpl.getSection(3), null);
+        assertEquals(second_round_moved, 1);
+
     }
 }

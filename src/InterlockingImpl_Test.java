@@ -320,4 +320,29 @@ public class InterlockingImpl_Test
         assertEquals(interlockingImpl.getSection(4), "A");
         assertEquals(num,3);
     }
+
+    @Test
+    public void moreThanOneTrain_exit_at_theSameTime() {
+        InterlockingImpl interlockingImpl = new InterlockingImpl();
+
+        interlockingImpl.addTrain("B", 10, 2);
+        interlockingImpl.addTrain("C", 1, 8);
+        interlockingImpl.addTrain("D", 11, 3);
+
+        String[] trainsToMove1 = {"B", "C"};
+        interlockingImpl.moveTrains(trainsToMove1);
+        interlockingImpl.moveTrains(trainsToMove1);
+
+        String[] trainsToMove2 = {"D"};
+        interlockingImpl.moveTrains(trainsToMove2);
+
+        // B and C should exit at the same time
+        assertEquals(interlockingImpl.getTrain("B"), -1);
+        assertEquals(interlockingImpl.getSection(2), null);
+        assertEquals(interlockingImpl.getTrain("C"), -1);
+        assertEquals(interlockingImpl.getSection(8), null);
+        assertEquals(interlockingImpl.getTrain("D"), 7);
+        assertEquals(interlockingImpl.getSection(7), "D");
+    }
+
 }

@@ -1,3 +1,4 @@
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 // Train direction can be either North or South
@@ -453,24 +454,34 @@ public class InterlockingImpl implements Interlocking
             }
         }
 
-        // Firstly, all trains at destination are exited
-        for (int i = 0; i < present_train_list.size(); i++)
-        {
-            int currentSectionId = present_train_list.get(i).getOccupying_SectionId();
-            if (currentSectionId == present_train_list.get(i).getDest_SectionId())
-            {
-                sections_list.get(currentSectionId - 1).setOccupyingTrain_name("");
-                exited_train_list.add(present_train_list.get(i));
-                present_train_list.remove(i);
-            }
-        }
-
         // reset moving times of trains in railway corridor to 0
         for (String scanning_train : trainNames)
         {
             int pos = getTrainPos(scanning_train);
             Train train = present_train_list.get(pos);
             train.reset_movedTimes_zero();
+        }
+
+        // store the indexes to remove in present_train_list if trains exit
+        ArrayList<Integer> index_to_remove = new ArrayList<Integer>();
+
+        // Firstly, find all trains arrived destination
+        for (int i = 0; i < present_train_list.size(); i++)
+        {
+            int currentSectionId = present_train_list.get(i).getOccupying_SectionId();
+
+            if (currentSectionId == present_train_list.get(i).getDest_SectionId())
+            {
+                sections_list.get(currentSectionId - 1).setOccupyingTrain_name("");
+                exited_train_list.add(present_train_list.get(i));
+                index_to_remove.add(i);
+            }
+        }
+
+        // remove exited train from present_train_list
+        for (int i = 0; i < index_to_remove.size(); i++)
+        {
+            present_train_list.remove(index_to_remove.get(i));
         }
 
         // update firing policies

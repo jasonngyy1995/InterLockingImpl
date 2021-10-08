@@ -373,7 +373,7 @@ public class PetriNet
             if (pointMachine.getMachine_id() == 4)
             {
                 // if section 6 and 9 are empty
-                if (sectionsList.get(5).getOccupyingTrain_name().equals("") && (sectionsList.get(8).getOccupyingTrain_name().equals("")))
+                if (sectionsList.get(5).getOccupyingTrain_name().equals("") && sectionsList.get(8).getOccupyingTrain_name().equals(""))
                 {
                     set_second_policy(4);
 

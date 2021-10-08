@@ -306,13 +306,11 @@ public class PetriNet
 
         for (PointMachine pointMachine: pointMachineList)
         {
-            boolean current_second_policy_status = pointMachine.getControlled_policies().get(1).getEnabled();
-
             // update instruction for point machine 1
             if (pointMachine.getMachine_id() == 1)
             {
-                // (For train from 4 to 3) if section 3 or 4 and 7 are empty and the current enabled policy is still the default one
-                if ((sectionsList.get(2).getOccupyingTrain_name().equals("") || sectionsList.get(3).getOccupyingTrain_name().equals("")) && sectionsList.get(6).getOccupyingTrain_name().equals("") && current_second_policy_status == false)
+                // (For train from 4 to 3) if section 3 or 4 and 7 are empty
+                if ((sectionsList.get(2).getOccupyingTrain_name().equals("") || sectionsList.get(3).getOccupyingTrain_name().equals("")) && sectionsList.get(6).getOccupyingTrain_name().equals(""))
                 {
                     set_second_policy(1);
                 }
@@ -329,8 +327,8 @@ public class PetriNet
                     int sec7TrainPos = getTrainPos(sectionsList.get(6).getOccupyingTrain_name(), trainList);
                     Train sec7Train = trainList.get(sec7TrainPos);
 
-                    // check if the current enabled policy is still the default one and section 7 train is to South, if yes, no collision and change is triggered
-                    if (sec7Train.getTrain_direction() == Direction.South && current_second_policy_status == false)
+                    // check if the section 7 train is to South, if yes, no collision and change is triggered
+                    if (sec7Train.getTrain_direction() == Direction.South)
                     {
                         set_second_policy(1);
 
@@ -348,8 +346,8 @@ public class PetriNet
             // update instruction for point machine 2
             if (pointMachine.getMachine_id() == 2)
             {
-                // if section 6 is empty and the current enabled policy is still the default one and S3S4 is not blocked by point machine 1
-                if (sectionsList.get(5).getOccupyingTrain_name().equals("") && current_second_policy_status == false && S3S4_blocked_already == 0)
+                // if section 6 is empty and S3S4 is not blocked by point machine 1
+                if (sectionsList.get(5).getOccupyingTrain_name().equals("") && S3S4_blocked_already == 0)
                 {
                     set_second_policy(2);
 
@@ -361,8 +359,8 @@ public class PetriNet
             // update instruction for point machine 3
             if (pointMachine.getMachine_id() == 3)
             {
-                // if section 6 is empty and the current enabled policy is still the default one and S3S4 is not blocked by point machine 1
-                if (sectionsList.get(0).getOccupyingTrain_name().equals("") && current_second_policy_status == false && S3S4_blocked_already == 0)
+                // if section 6 is empty and S3S4 is not blocked by point machine 1
+                if (sectionsList.get(0).getOccupyingTrain_name().equals("") && S3S4_blocked_already == 0)
                 {
                     set_second_policy(3);
 
@@ -374,13 +372,13 @@ public class PetriNet
             // update instruction for point machine 4
             if (pointMachine.getMachine_id() == 4)
             {
-                // if section 6 and 9 are empty and the current enabled policy is still the default one
-                if (sectionsList.get(5).getOccupyingTrain_name().equals("") && (sectionsList.get(8).getOccupyingTrain_name().equals("")) && current_second_policy_status == false)
+                // if section 6 and 9 are empty
+                if (sectionsList.get(5).getOccupyingTrain_name().equals("") && (sectionsList.get(8).getOccupyingTrain_name().equals("")))
                 {
                     set_second_policy(4);
 
-                    // if section 6 is empty and the current enabled policy is still the default one
-                } else if (sectionsList.get(5).getOccupyingTrain_name().equals("") && !sectionsList.get(8).getOccupyingTrain_name().equals("") && current_second_policy_status == false)
+                    // if section 6 is empty
+                } else if (sectionsList.get(5).getOccupyingTrain_name().equals("") && !sectionsList.get(8).getOccupyingTrain_name().equals(""))
                 {
                     int sec9TrainPos = getTrainPos(sectionsList.get(8).getOccupyingTrain_name(), trainList);
                     Train sec9Train = trainList.get(sec9TrainPos);
@@ -391,7 +389,7 @@ public class PetriNet
                         set_second_policy(4);
                     }
 
-                    // if section 6 and 9 are not empty
+                    // if section 6 or 9 are not empty
                 } else if (!sectionsList.get(5).getOccupyingTrain_name().equals("") || !sectionsList.get(8).getOccupyingTrain_name().equals(""))
                 {
                     reset_to_default(4);
@@ -401,8 +399,8 @@ public class PetriNet
             // update instruction for point machine 5
             if (pointMachine.getMachine_id() == 5)
             {
-                // if section 9 is empty and the current enabled policy is still the default one
-                if (sectionsList.get(8).getOccupyingTrain_name().equals("") && current_second_policy_status == false)
+                // if section 9 is empty
+                if (sectionsList.get(8).getOccupyingTrain_name().equals(""))
                 {
                     set_second_policy(5);
 
@@ -414,8 +412,8 @@ public class PetriNet
             // update instruction for point machine 6
             if (pointMachine.getMachine_id() == 6)
             {
-                // if section 9 is empty and the current enabled policy is still the default one
-                if (sectionsList.get(8).getOccupyingTrain_name().equals("") && current_second_policy_status == false)
+                // if section 9 is empty
+                if (sectionsList.get(8).getOccupyingTrain_name().equals(""))
                 {
                     set_second_policy(6);
 
